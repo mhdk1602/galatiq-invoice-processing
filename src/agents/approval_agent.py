@@ -3,6 +3,7 @@ from .base_agent import BaseAgent
 from ..models import Invoice, ValidationResult, ApprovalDecision, ValidationIssueType
 from ..llm_client import get_llm_client
 from ..config import HIGH_VALUE_THRESHOLD, FRAUD_KEYWORDS
+from ..guardrails import check_approval_confidence
 
 
 class ApprovalAgent(BaseAgent):
@@ -74,12 +75,18 @@ class ApprovalAgent(BaseAgent):
                 
                 result = self._get_client().analyze_approval(invoice_data, issues_data, context)
                 decision = result.get('final_decision', {})
+                confidence = decision.get('confidence', 0.5)
+                approved = decision.get('approved', False)
+                
+                if approved and not check_approval_confidence(confidence):
+                    self.log(f"Low confidence ({confidence:.0%}), requiring human review", "WARNING")
+                    return ApprovalDecision(False, "Hold: LLM confidence below threshold", factors, confidence, True)
                 
                 return ApprovalDecision(
-                    decision.get('approved', False),
+                    approved,
                     f"Assessment: {result.get('initial_assessment', 'N/A')}\nCritique: {result.get('critique', 'N/A')}\nDecision: {decision.get('reasoning', 'N/A')}",
                     result.get('risk_factors', factors),
-                    decision.get('confidence', 0.5),
+                    confidence,
                     decision.get('requires_human_review', False)
                 )
             except Exception as e:

@@ -4,6 +4,7 @@ from ..models import Invoice, LineItem
 from ..parsers import pre_parse_invoice
 from ..llm_client import get_llm_client
 from ..config import FRAUD_KEYWORDS
+from ..guardrails import validate_file_input, validate_invoice_constraints, sanitize_llm_input
 
 
 class IngestionAgent(BaseAgent):
@@ -29,8 +30,10 @@ class IngestionAgent(BaseAgent):
     
     def process(self, file_path: str) -> tuple[Invoice, list[str]]:
         self.log(f"Processing: {file_path}")
-        if not Path(file_path).exists():
-            raise FileNotFoundError(f"Not found: {file_path}")
+        
+        valid, msg = validate_file_input(file_path)
+        if not valid:
+            raise ValueError(f"Input validation failed: {msg}")
         
         notes = []
         basic, content, fmt = pre_parse_invoice(file_path)
@@ -44,7 +47,8 @@ class IngestionAgent(BaseAgent):
         if self.use_llm and self._get_client():
             try:
                 self.log("Using LLM extraction...")
-                llm = self._get_client().extract_invoice(content)
+                sanitized = sanitize_llm_input(content)
+                llm = self._get_client().extract_invoice(sanitized)
                 def parse_num(val, as_int=False):
                     if val is None: return 0
                     if isinstance(val, (int, float)): return int(val) if as_int else float(val)
@@ -72,6 +76,11 @@ class IngestionAgent(BaseAgent):
                 invoice = basic
         else:
             invoice = basic
+        
+        violations = validate_invoice_constraints(invoice)
+        if violations:
+            notes.extend([f"CONSTRAINT: {v}" for v in violations])
+            self.log(f"Constraint violations: {len(violations)}", "WARNING")
         
         self.log(f"Extracted: {invoice.invoice_number} from {invoice.vendor}, ${invoice.total:,.2f}")
         return invoice, notes
