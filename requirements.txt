@@ -1,0 +1,11 @@
+# Multi-Agent Invoice Processing System
+# Requires Python 3.10+
+
+# LLM Integration - xAI Grok (Official SDK)
+xai-sdk>=1.0.0
+
+# PDF Processing
+pdfplumber>=0.10.0
+
+# Utilities
+pydantic>=2.0.0
