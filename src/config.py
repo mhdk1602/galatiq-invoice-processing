@@ -1,6 +1,13 @@
 import os
 from pathlib import Path
 
+# Load environment variables from .env file
+try:
+    from dotenv import load_dotenv
+    load_dotenv(Path(__file__).parent.parent / ".env")
+except ImportError:
+    pass  # python-dotenv not installed, use system env vars
+
 PROJECT_ROOT = Path(__file__).parent.parent
 DATABASE_PATH = PROJECT_ROOT / "inventory.db"
 
