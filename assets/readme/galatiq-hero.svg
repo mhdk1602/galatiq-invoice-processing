@@ -1,0 +1,140 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="540" viewBox="0 0 1280 540" role="img" aria-labelledby="title desc">
+  <title id="title">Galatiq Invoice Processing — Multi-Agent Pipeline</title>
+  <desc id="desc">Dark technical banner: four-stage agent pipeline (ingestion, validation, approval, payment), Grok LLM core, decision badges.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#070b14"/>
+      <stop offset="0.5" stop-color="#10172a"/>
+      <stop offset="1" stop-color="#1b0e26"/>
+    </linearGradient>
+    <linearGradient id="pipe" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#55d6be"/>
+      <stop offset="0.5" stop-color="#6ea8fe"/>
+      <stop offset="1" stop-color="#f5b84b"/>
+    </linearGradient>
+    <linearGradient id="alert" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#f5b84b"/>
+      <stop offset="1" stop-color="#f25f5c"/>
+    </linearGradient>
+    <linearGradient id="card" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#11202f" stop-opacity="0.96"/>
+      <stop offset="1" stop-color="#0a1320" stop-opacity="0.98"/>
+    </linearGradient>
+    <radialGradient id="core" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0" stop-color="#9b6cff" stop-opacity="0.85"/>
+      <stop offset="0.6" stop-color="#9b6cff" stop-opacity="0.25"/>
+      <stop offset="1" stop-color="#9b6cff" stop-opacity="0"/>
+    </radialGradient>
+    <filter id="softGlow" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur stdDeviation="3.6" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="14" stdDeviation="14" flood-color="#000" flood-opacity="0.45"/>
+    </filter>
+    <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
+      <path d="M40 0 L0 0 0 40" stroke="#1e2640" stroke-width="0.6" fill="none" opacity="0.55"/>
+    </pattern>
+    <style>
+      .eyebrow { font: 700 14px ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; fill: #8aa3bb; letter-spacing: 0.22em; }
+      .title { font: 800 56px -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, sans-serif; fill: #f4f9ff; letter-spacing: -0.01em; }
+      .subtitle { font: 500 21px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; fill: #c7d3e1; }
+      .tagline { font: 500 17px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; fill: #93a7bc; }
+      .mono { font: 600 13px ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; fill: #8ff2df; letter-spacing: 0.08em; }
+      .micro { font: 700 11px ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; fill: #9aafc4; letter-spacing: 0.18em; }
+      .label { font: 700 15px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; fill: #f4f9ff; }
+      .agent { font: 700 13px ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; letter-spacing: 0.12em; fill: #dce8f4; }
+      .role { font: 600 12px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; fill: #93a7bc; }
+      .metric { font: 800 26px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; fill: #ffffff; }
+      .unit { font: 600 12px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; fill: #8ff2df; letter-spacing: 0.04em; }
+    </style>
+  </defs>
+
+  <rect width="1280" height="540" fill="url(#bg)"/>
+  <rect width="1280" height="540" fill="url(#grid)" opacity="0.6"/>
+
+  <g transform="translate(72 70)">
+    <text class="eyebrow" textLength="492" lengthAdjust="spacingAndGlyphs">GALATIQ CASE &#8226; MULTI-AGENT PIPELINE</text>
+    <text class="title" y="74">Invoice processing,</text>
+    <text class="title" y="138">four agents deep.</text>
+    <text class="subtitle" y="184" textLength="640" lengthAdjust="spacingAndGlyphs">Extraction. Validation. Approval. Payment.</text>
+    <text class="tagline" y="218" textLength="640" lengthAdjust="spacingAndGlyphs">Grok-driven reasoning with rule-based fallback. FastAPI front,</text>
+    <text class="tagline" y="244" textLength="640" lengthAdjust="spacingAndGlyphs">SQLite ledger, audit-grade trace on every decision.</text>
+
+    <g transform="translate(0 290)">
+      <g>
+        <rect width="200" height="92" rx="14" fill="url(#card)" stroke="#2c4760" filter="url(#shadow)"/>
+        <text class="micro" x="20" y="28">FORMATS</text>
+        <text class="metric" x="20" y="62">PDF / JSON</text>
+        <text class="unit" x="20" y="80">+ CSV / XML / TXT</text>
+      </g>
+      <g transform="translate(218 0)">
+        <rect width="200" height="92" rx="14" fill="url(#card)" stroke="#2c4760" filter="url(#shadow)"/>
+        <text class="micro" x="20" y="28">DECISION TRACE</text>
+        <text class="metric" x="20" y="62">4 stages</text>
+        <text class="unit" x="20" y="80">stored per invoice id</text>
+      </g>
+      <g transform="translate(436 0)">
+        <rect width="200" height="92" rx="14" fill="url(#card)" stroke="#2c4760" filter="url(#shadow)"/>
+        <text class="micro" x="20" y="28">FALLBACK</text>
+        <text class="metric" x="20" y="62">--no-llm</text>
+        <text class="unit" x="20" y="80">deterministic rule path</text>
+      </g>
+    </g>
+  </g>
+
+  <g transform="translate(746 78)">
+    <rect width="468" height="384" rx="24" fill="url(#card)" stroke="#2c4760" filter="url(#shadow)"/>
+    <text class="micro" x="28" y="36">AGENT MESH</text>
+
+    <g transform="translate(212 196)">
+      <circle cx="0" cy="0" r="84" fill="url(#core)"/>
+      <circle cx="0" cy="0" r="34" fill="#1a1340" stroke="#9b6cff" stroke-width="1.5" filter="url(#softGlow)"/>
+      <text class="agent" x="0" y="-2" text-anchor="middle">GROK</text>
+      <text class="role" x="0" y="14" text-anchor="middle">LLM core</text>
+    </g>
+
+    <g transform="translate(60 84)">
+      <rect width="146" height="58" rx="12" fill="#0a1320" stroke="#314c64"/>
+      <text class="agent" x="14" y="22">INGESTION</text>
+      <text class="role" x="14" y="40">PDF/JSON/CSV &#8594; struct</text>
+    </g>
+    <path d="M206 142 C232 148 244 158 250 178" stroke="url(#pipe)" stroke-width="2.4" fill="none" stroke-linecap="round" filter="url(#softGlow)"/>
+
+    <g transform="translate(60 252)">
+      <rect width="146" height="58" rx="12" fill="#0a1320" stroke="#314c64"/>
+      <text class="agent" x="14" y="22">VALIDATION</text>
+      <text class="role" x="14" y="40">inventory + vendors</text>
+    </g>
+    <path d="M206 280 C228 274 240 252 248 222" stroke="url(#pipe)" stroke-width="2.4" fill="none" stroke-linecap="round" filter="url(#softGlow)"/>
+
+    <g transform="translate(264 84)">
+      <rect width="146" height="58" rx="12" fill="#0a1320" stroke="#314c64"/>
+      <text class="agent" x="14" y="22">APPROVAL</text>
+      <text class="role" x="14" y="40">reasoning + reflection</text>
+    </g>
+    <path d="M338 142 C320 152 304 166 296 178" stroke="url(#pipe)" stroke-width="2.4" fill="none" stroke-linecap="round" filter="url(#softGlow)"/>
+
+    <g transform="translate(264 252)">
+      <rect width="146" height="58" rx="12" fill="#0a1320" stroke="#314c64"/>
+      <text class="agent" x="14" y="22">PAYMENT</text>
+      <text class="role" x="14" y="40">execute or block</text>
+    </g>
+    <path d="M334 252 C320 240 308 224 296 216" stroke="url(#pipe)" stroke-width="2.4" fill="none" stroke-linecap="round" filter="url(#softGlow)"/>
+
+    <g transform="translate(30 332)">
+      <rect width="86" height="30" rx="9" fill="#10271f" stroke="#55d6be"/>
+      <text class="micro" x="14" y="20" fill="#8ff2df">PAID</text>
+      <rect x="100" width="120" height="30" rx="9" fill="#2c1d12" stroke="#f5b84b"/>
+      <text class="micro" x="114" y="20" fill="#f5b84b">SCRUTINY &gt; $10k</text>
+      <rect x="234" width="100" height="30" rx="9" fill="#2a131a" stroke="#f25f5c"/>
+      <text class="micro" x="248" y="20" fill="#f25f5c">REJECTED</text>
+      <rect x="348" width="68" height="30" rx="9" fill="#2a131a" stroke="#f25f5c"/>
+      <text class="micro" x="358" y="20" fill="#f25f5c">FRAUD</text>
+    </g>
+  </g>
+
+  <g transform="translate(72 510)">
+    <text class="mono" x="0" y="0">&#10095; FASTAPI &#8226; PYDANTIC GUARDRAILS &#8226; SQLITE LEDGER &#8226; PDFPLUMBER &#8226; HTML/CSS/JS UI</text>
+  </g>
+</svg>

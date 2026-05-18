@@ -1,347 +1,156 @@
-# Galatiq Case: Invoice Processing Automation
+<p align="center">
+  <img src="assets/readme/galatiq-hero.svg" alt="Galatiq Invoice Processing hero graphic" width="100%">
+</p>
 
-A multi-agent system that automates end-to-end invoice processing with LLM-powered extraction, validation, approval, and payment workflows.
+<h1 align="center">Galatiq Invoice Processing</h1>
+
+<p align="center">
+  <strong>A four-agent invoice pipeline &#8212; extraction, validation, approval, payment &#8212; with Grok reasoning and a deterministic fallback.</strong>
+</p>
+
+<p align="center">
+  <img alt="Python 3.10+" src="https://img.shields.io/badge/python-3.10%2B-3776ab?style=for-the-badge&logo=python&logoColor=white">
+  <img alt="FastAPI" src="https://img.shields.io/badge/FastAPI-005571?style=for-the-badge&logo=fastapi&logoColor=white">
+  <img alt="xAI Grok" src="https://img.shields.io/badge/xAI-Grok-9b6cff?style=for-the-badge">
+  <img alt="SQLite" src="https://img.shields.io/badge/SQLite-07405e?style=for-the-badge&logo=sqlite&logoColor=white">
+  <img alt="License MIT" src="https://img.shields.io/badge/license-MIT-55d6be?style=for-the-badge">
+</p>
+
+<p align="center">
+  <a href="#quick-start">Quick start</a> /
+  <a href="#what-it-does">What it does</a> /
+  <a href="#architecture">Architecture</a> /
+  <a href="#workflow-demo">Demos</a> /
+  <a href="#sample-invoices">Samples</a> /
+  <a href="#configuration">Config</a>
+</p>
 
 ## Quick Start
 
 ```bash
-# 1. Clone and navigate to the project
-cd galatiq-case-invoices
-
-# 2. Install dependencies
+git clone https://github.com/mhdk1602/galatiq-invoice-processing.git
+cd galatiq-invoice-processing
 pip install -r requirements.txt
-
-# 3. Set up your API key
-cp .env.example .env
-# Edit .env and add your xAI API key
-
-# 4. Initialize the database
-python main.py --init-db
-
-# 5. Launch the web interface
-python web_app.py
-# Open http://localhost:8080 in your browser
+cp .env.example .env             # add XAI_API_KEY
+python main.py --init-db         # seeds inventory.db
+python web_app.py                # http://localhost:8080
 ```
 
----
+The CLI path runs the same pipeline:
 
-## Table of Contents
+```bash
+python main.py --invoice_path=data/invoices/invoice_1001.txt           # LLM + rules
+python main.py --invoice_path=data/invoices/invoice_1001.txt --no-llm  # rules only
+```
 
-- [Overview](#overview)
-- [Architecture](#architecture)
-- [Installation](#installation)
-- [Usage](#usage)
-  - [Web Interface](#web-interface)
-  - [Command Line](#command-line)
-  - [API Endpoints](#api-endpoints)
-- [Workflow Demo](#workflow-demo)
-- [Sample Invoices](#sample-invoices)
-- [Configuration](#configuration)
+## What it does
 
----
+Acme Corp loses ~`$2M / year` on manual invoice processing: PDFs arrive in messy formats, get hand-keyed against a legacy inventory database, then chase email approvals before payment. Error rate ~30%, processing delay ~5 days.
 
-## Overview
+This system replaces that pipeline with four agents and an LLM core. Every decision is traced, every stage is overridable, and the entire flow falls back to deterministic rules when the LLM is disabled.
 
-### Background
-
-Acme Corp is a PE-backed manufacturing firm losing **$2M/year** on manual invoice processing. Invoices arrive via email as PDFs in messy formats with frequent errors. Staff manually extract data, validate against a legacy inventory database (inconsistent), obtain VP approval (via email chains), and process payment.
-
-**Current pain points:**
-- 30% error rate
-- 5-day processing delays
-- Frustrated stakeholders
-
-### Solution
-
-This system automates the four-stage invoice processing workflow:
-
-| Stage | Description | Agent |
-|-------|-------------|-------|
-| **1. Ingestion** | Extract structured data from invoices (PDF, TXT, JSON, CSV, XML) | `IngestionAgent` |
-| **2. Validation** | Verify against inventory database, flag mismatches | `ValidationAgent` |
-| **3. Approval** | VP-level review with LLM reasoning and reflection | `ApprovalAgent` |
-| **4. Payment** | Process payment or log rejection | `PaymentAgent` |
-
----
+| Stage | Agent | Job | Failure mode it catches |
+|---|---|---|---|
+| 1. Ingestion | `IngestionAgent` | Extract structured fields from PDF / TXT / JSON / CSV / XML | malformed files, missing identifiers, fraud keywords in raw text |
+| 2. Validation | `ValidationAgent` | Cross-check items, quantities, and vendors against inventory + vendor tables | unknown SKUs, insufficient stock, blocked vendors, negative quantities |
+| 3. Approval | `ApprovalAgent` | Apply business rules and (if enabled) Grok reasoning with reflection | high-value invoices crossing the scrutiny threshold, low LLM confidence |
+| 4. Payment | `PaymentAgent` | Execute payment, log audit trail, or block | rejection, transient API failures, duplicate transaction IDs |
 
 ## Architecture
 
-```
-┌─────────────────────────────────────────────────────────────────┐
-│                     Invoice Assessment System                    │
-├─────────────────────────────────────────────────────────────────┤
-│                                                                 │
-│   ┌──────────┐    ┌──────────────┐    ┌──────────────────┐     │
-│   │  Web UI  │───▶│  FastAPI     │───▶│  Orchestrator    │     │
-│   │ (Upload) │    │  /api/assess │    │                  │     │
-│   └──────────┘    └──────────────┘    └────────┬─────────┘     │
-│                                                │               │
-│         ┌──────────────────────────────────────┼───────────┐   │
-│         │                                      ▼           │   │
-│         │   ┌─────────────┐    ┌─────────────────────┐     │   │
-│         │   │  Ingestion  │───▶│  Invoice + LineItems│     │   │
-│         │   │    Agent    │    └─────────────────────┘     │   │
-│         │   └─────────────┘              │                 │   │
-│         │         │                      ▼                 │   │
-│         │         │         ┌─────────────────────┐        │   │
-│         │         │         │    Validation       │        │   │
-│         │         │         │      Agent          │        │   │
-│         │         │         └─────────┬───────────┘        │   │
-│         │         │                   │                    │   │
-│         │   ┌─────▼─────┐            │                    │   │
-│         │   │   Grok    │◀───────────┤                    │   │
-│         │   │   LLM     │            │                    │   │
-│         │   └───────────┘            ▼                    │   │
-│         │         │         ┌─────────────────────┐        │   │
-│         │         │         │    Approval         │        │   │
-│         │         └────────▶│      Agent          │        │   │
-│         │                   └─────────┬───────────┘        │   │
-│         │                             │                    │   │
-│         │                             ▼                    │   │
-│         │                   ┌─────────────────────┐        │   │
-│         │                   │    Payment          │        │   │
-│         │                   │      Agent          │        │   │
-│         │                   └─────────────────────┘        │   │
-│         │                                                  │   │
-│         └──────────────────────────────────────────────────┘   │
-│                                                                 │
-│   ┌─────────────────────────────────────────────────────────┐  │
-│   │                    SQLite Database                       │  │
-│   │  • inventory (items, stock, prices)                     │  │
-│   │  • vendors (approved status, risk scores)               │  │
-│   │  • processed_invoices (audit trail)                     │  │
-│   └─────────────────────────────────────────────────────────┘  │
-│                                                                 │
-└─────────────────────────────────────────────────────────────────┘
+```mermaid
+flowchart LR
+    UI["Web UI<br/>file upload"] --> API["FastAPI<br/>/api/assess"]
+    CLI["main.py CLI"] --> ORCH
+    API --> ORCH["Orchestrator"]
+    ORCH --> ING["IngestionAgent"]
+    ING --> VAL["ValidationAgent"]
+    VAL --> APP["ApprovalAgent"]
+    APP --> PAY["PaymentAgent"]
+
+    ING -.-> LLM["Grok LLM<br/>(optional)"]
+    APP -.-> LLM
+    VAL -.-> DB["SQLite<br/>inventory + vendors"]
+    APP -.-> DB
+    PAY --> AUDIT["processed_invoices<br/>audit trail"]
 ```
 
----
+- **LLM is optional.** Toggle `use_llm=false` (UI checkbox) or `--no-llm` (CLI). The pipeline degrades to deterministic rules; the agent interface does not change.
+- **Reflection** in the approval agent uses a second Grok call to challenge the first reasoning trace before producing a final verdict on high-value invoices.
+- **SQLite** keeps the demo single-file. Swap the `database.py` adapter to point at Postgres or any DB-API target.
 
-## Installation
+## Workflow demo
 
-### Prerequisites
+Four canonical paths through the pipeline:
 
-- Python 3.10+
-- xAI API key (get one at https://console.x.ai/)
+| Scenario | Sample file | What the agents see | Outcome |
+|---|---|---|---|
+| Valid order, stock available | `invoice_1001.txt` | Widgets Inc., 2 line items, $5,000 | `PAID` with txn id |
+| Quantity exceeds stock | `invoice_1002.txt` | Gadgets Co., requests 20x GadgetX, only 5 on hand | `REJECTED` at validation |
+| Fraud signal | `invoice_1003.txt` | References zero-stock FakeItem; suspicious vendor | `REJECTED` with `FRAUD_DETECTED` |
+| Unknown SKUs | `invoice_1008.txt` | SuperGizmo, MegaSprocket &#8212; not in DB | `REJECTED` at validation |
 
-### Setup
+Each path is reproducible with `python main.py --invoice_path=data/invoices/<file>`.
+
+## API endpoints
+
+| Method | Endpoint | Purpose |
+|---|---|---|
+| `GET` | `/` | Web UI (upload, drag-and-drop, sample picker) |
+| `POST` | `/api/assess` | Upload and process a single invoice |
+| `GET` | `/api/sample-invoices` | List bundled samples |
+| `POST` | `/api/assess-sample/{filename}` | Process a bundled sample (supports `?use_llm=false`) |
+| `GET` | `/api/health` | Liveness probe |
 
 ```bash
-# Install dependencies
-pip install -r requirements.txt
-
-# Configure environment
-cp .env.example .env
-```
-
-Edit `.env` and add your xAI API key:
-
-```env
-XAI_API_KEY=xai-your-api-key-here
-```
-
-### Initialize Database
-
-```bash
-python main.py --init-db
-```
-
-This creates `inventory.db` with sample data:
-
-| Item | Stock | Unit Price |
-|------|-------|------------|
-| WidgetA | 15 | $250.00 |
-| WidgetB | 10 | $500.00 |
-| GadgetX | 5 | $750.00 |
-| FakeItem | 0 | $1,000.00 |
-
----
-
-## Usage
-
-### Web Interface
-
-The recommended way to interact with the system:
-
-```bash
-python web_app.py
-```
-
-Open **http://localhost:8080** in your browser.
-
-**Features:**
-- 📄 Drag-and-drop file upload
-- 🔄 Toggle LLM-enhanced vs rule-based processing
-- 📋 Quick-select sample invoices
-- 📊 Visual results with validation issues, approval reasoning, and payment status
-
-### Command Line
-
-For scripting and automation:
-
-```bash
-# Process a single invoice
-python main.py --invoice_path=data/invoices/invoice_1001.txt
-
-# Process without LLM (faster, rule-based only)
-python main.py --invoice_path=data/invoices/invoice_1001.txt --no-llm
-
-# Initialize database only
-python main.py --init-db
-```
-
-### API Endpoints
-
-The web app exposes a REST API:
-
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| `GET` | `/` | Web UI |
-| `POST` | `/api/assess` | Upload and assess an invoice file |
-| `GET` | `/api/sample-invoices` | List available sample invoices |
-| `POST` | `/api/assess-sample/{filename}` | Assess a sample invoice |
-| `GET` | `/api/health` | Health check |
-
-**Example: Upload and assess**
-
-```bash
-curl -X POST -F "file=@invoice.pdf" "http://localhost:8080/api/assess"
-```
-
-**Example: Assess without LLM**
-
-```bash
+curl -X POST -F "file=@invoice.pdf" http://localhost:8080/api/assess
 curl -X POST "http://localhost:8080/api/assess-sample/invoice_1001.txt?use_llm=false"
 ```
 
----
+## Sample invoices
 
-## Workflow Demo
+All under `data/invoices/`:
 
-### Scenario 1: Valid Invoice → Payment Success
-
-**Invoice:** `invoice_1001.txt` (Widgets Inc., $5,000)
-
-```
-┌─────────────┐     ┌─────────────┐     ┌─────────────┐     ┌─────────────┐
-│  INGESTION  │────▶│ VALIDATION  │────▶│  APPROVAL   │────▶│   PAYMENT   │
-│             │     │             │     │             │     │             │
-│ ✓ Extracted │     │ ✓ Stock OK  │     │ ✓ Approved  │     │ ✓ Success   │
-│   2 items   │     │ ✓ Vendor OK │     │   Conf: 70% │     │ TXN-XXXXXX  │
-└─────────────┘     └─────────────┘     └─────────────┘     └─────────────┘
-```
-
-**Try it:**
-```bash
-python main.py --invoice_path=data/invoices/invoice_1001.txt
-```
-
-### Scenario 2: Insufficient Stock → Rejection
-
-**Invoice:** `invoice_1002.txt` (Gadgets Co., requests 20× GadgetX but only 5 in stock)
-
-```
-┌─────────────┐     ┌─────────────┐     ┌─────────────┐     ┌─────────────┐
-│  INGESTION  │────▶│ VALIDATION  │────▶│  APPROVAL   │────▶│   PAYMENT   │
-│             │     │             │     │             │     │             │
-│ ✓ Extracted │     │ ✗ Stock:    │     │ ✗ Rejected  │     │ ✗ Skipped   │
-│             │     │   need 20,  │     │   HIGH RISK │     │             │
-│             │     │   have 5    │     │             │     │             │
-└─────────────┘     └─────────────┘     └─────────────┘     └─────────────┘
-```
-
-**Try it:**
-```bash
-python main.py --invoice_path=data/invoices/invoice_1002.txt
-```
-
-### Scenario 3: Fraudulent Invoice → Flagged
-
-**Invoice:** `invoice_1003.txt` (references FakeItem with 0 stock, suspicious vendor)
-
-```
-┌─────────────┐     ┌─────────────┐     ┌─────────────┐     ┌─────────────┐
-│  INGESTION  │────▶│ VALIDATION  │────▶│  APPROVAL   │────▶│   PAYMENT   │
-│             │     │             │     │             │     │             │
-│ ⚠ Fraud     │     │ ✗ Zero      │     │ ✗ Rejected  │     │ ✗ Blocked   │
-│   keywords  │     │   stock     │     │   FRAUD     │     │             │
-│   detected  │     │   item      │     │   DETECTED  │     │             │
-└─────────────┘     └─────────────┘     └─────────────┘     └─────────────┘
-```
-
-**Try it:**
-```bash
-python main.py --invoice_path=data/invoices/invoice_1003.txt
-```
-
-### Scenario 4: Unknown Item → Validation Error
-
-**Invoice:** `invoice_1008.txt` (references SuperGizmo, MegaSprocket - not in database)
-
-```
-┌─────────────┐     ┌─────────────┐     ┌─────────────┐     ┌─────────────┐
-│  INGESTION  │────▶│ VALIDATION  │────▶│  APPROVAL   │────▶│   PAYMENT   │
-│             │     │             │     │             │     │             │
-│ ✓ Extracted │     │ ✗ Items     │     │ ✗ Rejected  │     │ ✗ Skipped   │
-│             │     │   not found │     │   UNKNOWN   │     │             │
-│             │     │   in DB     │     │   PRODUCTS  │     │             │
-└─────────────┘     └─────────────┘     └─────────────┘     └─────────────┘
-```
-
----
-
-## Sample Invoices
-
-The `data/invoices/` directory contains test invoices covering various scenarios:
-
-| Invoice | Format | Scenario | Expected Result |
-|---------|--------|----------|-----------------|
-| `invoice_1001.txt` | TXT | Normal order, stock available | ✓ PAID |
-| `invoice_1002.txt` | TXT | Quantity exceeds stock | ✗ REJECTED |
-| `invoice_1003.txt` | TXT | Fraudulent (zero-stock item) | ✗ REJECTED |
-| `invoice_1004.json` | JSON | Clean JSON format | ✓ PAID |
-| `invoice_1005.json` | JSON | High-value ($15K+) | Requires scrutiny |
-| `invoice_1006.csv` | CSV | CSV format test | ✓ PAID |
-| `invoice_1008.txt` | TXT | Unknown items | ✗ REJECTED |
-| `invoice_1009.json` | JSON | Negative quantity | ✗ REJECTED |
-| `invoice_1011.pdf` | PDF | PDF extraction test | Varies |
-
----
+| Invoice | Format | Designed to trigger | Expected outcome |
+|---|---|---|---|
+| `invoice_1001.txt` | TXT | normal happy path | `PAID` |
+| `invoice_1002.txt` | TXT | quantity > stock | `REJECTED` |
+| `invoice_1003.txt` | TXT | fraud keywords + zero-stock item | `REJECTED` |
+| `invoice_1004.json` | JSON | clean JSON format | `PAID` |
+| `invoice_1005.json` | JSON | high-value ($15K+) | `SCRUTINY` |
+| `invoice_1006.csv` | CSV | CSV ingestion | `PAID` |
+| `invoice_1008.txt` | TXT | unknown SKUs | `REJECTED` |
+| `invoice_1009.json` | JSON | negative quantity | `REJECTED` |
+| `invoice_1011.pdf` | PDF | PDF extraction path | varies by content |
 
 ## Configuration
 
-### Environment Variables
+Environment variables (`.env`):
 
-| Variable | Description | Default |
-|----------|-------------|---------|
-| `XAI_API_KEY` | xAI API key for Grok LLM | Required |
-| `XAI_MODEL` | Grok model to use | `grok-4-1-fast-reasoning` |
-| `PORT` | Web server port | `8080` |
+| Variable | Default | Purpose |
+|---|---|---|
+| `XAI_API_KEY` | required | xAI Grok credential |
+| `XAI_MODEL` | `grok-4-1-fast-reasoning` | model id |
+| `PORT` | `8080` | FastAPI port |
 
-### Business Rules
+Business rules (`src/config.py`):
 
-Configured in `src/config.py`:
+| Setting | Default | Effect |
+|---|---|---|
+| `HIGH_VALUE_THRESHOLD` | `$10,000` | trigger extra scrutiny path |
+| `MAX_INVOICE_AMOUNT` | `$500,000` | hard reject above this |
+| `MIN_CONFIDENCE_THRESHOLD` | `0.6` | reject if LLM self-reported confidence is below |
+| `BLOCKED_VENDORS` | list | auto-reject |
+| `FRAUD_KEYWORDS` | list | trigger fraud path on ingestion |
 
-| Setting | Value | Description |
-|---------|-------|-------------|
-| `HIGH_VALUE_THRESHOLD` | $10,000 | Invoices above this require extra scrutiny |
-| `MAX_INVOICE_AMOUNT` | $500,000 | Maximum allowed invoice amount |
-| `MIN_CONFIDENCE_THRESHOLD` | 0.6 | Minimum LLM confidence for auto-approval |
-| `BLOCKED_VENDORS` | List | Vendors automatically rejected |
-| `FRAUD_KEYWORDS` | List | Triggers fraud detection |
+## Stack
 
----
-
-## Tech Stack
-
-- **LLM**: xAI Grok (via xai-sdk)
-- **Backend**: FastAPI + Uvicorn
-- **Database**: SQLite
-- **PDF Parsing**: pdfplumber
-- **Frontend**: Vanilla HTML/CSS/JS
-
----
+- **LLM** &#8212; xAI Grok via `xai-sdk`, optional and gated per call.
+- **Backend** &#8212; FastAPI + Uvicorn, single-file orchestrator.
+- **Database** &#8212; SQLite (`inventory.db`), seeded by `--init-db`.
+- **PDF parsing** &#8212; `pdfplumber`.
+- **Frontend** &#8212; vanilla HTML / CSS / JS under `templates/`.
 
 ## License
 
-MIT
+MIT &#8212; see [`LICENSE`](LICENSE).
